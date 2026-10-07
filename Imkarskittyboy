@@ -1,0 +1,2063 @@
+-- ============================================================
+-- ENXUI v1.5 — Standalone UI framework (extracted)
+-- ============================================================
+repeat task.wait() until game:IsLoaded()
+
+local ENXUI = {
+    Version = '1.5'
+};
+
+local ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
+local Players = cloneref(game:GetService("Players"))
+local Stats = cloneref(game:GetService("Stats"))
+local UserInputService = cloneref(game:GetService("UserInputService"))
+local RunService = cloneref(game:GetService("RunService"))
+local TweenService = cloneref(game:GetService("TweenService"))
+local CollectionService = cloneref(game:GetService("CollectionService"))
+local CoreGui = cloneref(game:GetService("CoreGui"))
+local Workspace = cloneref(game:GetService("Workspace"))
+local TextService = cloneref(game:GetService('TextService'))
+local Debris = cloneref(game:GetService("Debris"))
+local HttpService = cloneref(game:GetService("HttpService"))
+
+do
+    local CurrentCamera = workspace.CurrentCamera;
+    local LocalPlayer = Players.LocalPlayer;
+    local Mouse = LocalPlayer:GetMouse();
+
+    ENXUI.ProtectGui = protectgui or protectgui or (syn and syn.protectgui) or function() end;
+    ENXUI.MinimumTabSize = 535;
+
+    ENXUI.Connections = {};
+    ENXUI.Guis = {};
+    ENXUI.Cleanups = {};
+
+    function ENXUI:Track(conn)
+        table.insert(ENXUI.Connections, conn);
+        return conn;
+    end;
+
+    function ENXUI:IsMouseOverFrame(Frame)
+        local AbsPos, AbsSize = Frame.AbsolutePosition, Frame.AbsoluteSize;
+        if Mouse.X >= AbsPos.X and Mouse.X <= AbsPos.X + AbsSize.X and Mouse.Y >= AbsPos.Y and Mouse.Y <= AbsPos.Y + AbsSize.Y then
+            return true;
+        end;
+    end;
+
+    function ENXUI:NewInput(frame, call)
+        local Bth = Instance.new('TextButton',frame);
+        Bth.ZIndex = frame.ZIndex + 10;
+        Bth.Size = UDim2.fromScale(1,1);
+        Bth.BackgroundTransparency = 1;
+        Bth.TextTransparency = 1;
+        if call then
+            Bth.MouseButton1Click:Connect(call)
+        end
+        return Bth;
+    end;
+
+    ENXUI.Lucide = {
+        ["lucide-settings"] = "rbxassetid://10734950309",
+        ["lucide-home"] = "rbxassetid://10723407389",
+        ["lucide-swords"] = "rbxassetid://10734975692",
+        ["lucide-sword"] = "rbxassetid://10734975486",
+        ["lucide-eye"] = "rbxassetid://10723346959",
+        ["lucide-eye-off"] = "rbxassetid://10723346871",
+        ["lucide-shield"] = "rbxassetid://10734951847",
+        ["lucide-zap"] = "rbxassetid://10734984606",
+        ["lucide-bolt"] = "rbxassetid://10723374981",
+        ["lucide-skull"] = "rbxassetid://10734962068",
+        ["lucide-flag"] = "rbxassetid://10723375890",
+        ["lucide-play"] = "rbxassetid://10734923549",
+        ["lucide-target"] = "rbxassetid://10734977012",
+        ["lucide-scan"] = "rbxassetid://10734942565",
+        ["lucide-activity"] = "rbxassetid://10709752035",
+        ["lucide-wifi"] = "rbxassetid://10747382504",
+        ["lucide-globe"] = "rbxassetid://10723404337",
+        ["lucide-terminal"] = "rbxassetid://10734982144",
+        ["lucide-users"] = "rbxassetid://10747373426",
+        ["lucide-user"] = "rbxassetid://10747373176",
+        ["lucide-timer"] = "rbxassetid://10734984606",
+        ["lucide-clock"] = "rbxassetid://10709805144",
+        ["lucide-gamepad-2"] = "rbxassetid://10723395215",
+        ["lucide-layout-grid"] = "rbxassetid://10723424838",
+        ["lucide-x"] = "rbxassetid://10747384394",
+        ["lucide-x-circle"] = "rbxassetid://10747383819",
+        ["lucide-copy"] = "rbxassetid://10709812159",
+        ["lucide-save"] = "rbxassetid://10734941499",
+        ["lucide-folder-open"] = "rbxassetid://10723386277",
+        ["lucide-trash-2"] = "rbxassetid://10747362241",
+        ["lucide-check"] = "rbxassetid://10709790644",
+        ["lucide-rotate-ccw"] = "rbxassetid://10734940376",
+        ["lucide-chevron-right"] = "rbxassetid://10709791437",
+        ["lucide-chevron-down"] = "rbxassetid://10709790948",
+        ["lucide-minus"] = "rbxassetid://10734896206",
+        ["lucide-plus"] = "rbxassetid://10734924532",
+        ["lucide-lock"] = "rbxassetid://10723434711",
+        ["lucide-minimize-2"] = "rbxassetid://10734895698",
+        ["lucide-search"] = "rbxassetid://10734943674",
+    };
+
+    function ENXUI:GetIcon(name)
+        return ENXUI.Lucide['lucide-'..tostring(name)] or ENXUI.Lucide[name] or ENXUI.Lucide[tostring(name)] or "";
+    end;
+
+    function ENXUI:RandomString()
+        return string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))
+    end;
+
+    function ENXUI:Rounding(num, numDecimalPlaces)
+        local mult = 10^(numDecimalPlaces or 0)
+        return math.floor(num * mult + 0.5) / mult
+    end;
+
+    ENXUI.Theme = {
+        WindowBackgroundColor = Color3.fromRGB(12, 12, 14),
+        HeadText = Color3.fromRGB(232, 232, 235),
+        LineColor = Color3.fromRGB(35, 35, 40),
+        BackgroundColor = Color3.fromRGB(28, 28, 32),
+        SectionColor = Color3.fromRGB(22, 22, 25),
+        Hightlight = Color3.fromRGB(230, 78, 72),
+        StrokeColor = Color3.fromRGB(44, 44, 50),
+        StrokeColor2 = Color3.fromRGB(120, 120, 128),
+        BackgroundColor2 = Color3.fromRGB(20, 20, 23),
+        IconColor = Color3.fromRGB(220, 220, 225),
+    }
+
+    ENXUI.Chroma = {
+        Enabled = false,
+        Speed = 0.45,
+        Targets = {},
+    }
+
+    function ENXUI:ChromaColor(offset)
+        local t = (tick() * ENXUI.Chroma.Speed) + (offset or 0)
+        local wave = (math.sin(t * math.pi * 2) + 1) / 2
+        local hue = ((wave * 0.055) + 0.972) % 1
+        local sat = 0.85 + (math.sin(t * math.pi * 1.3) * 0.10)
+        local val = 0.80 + (math.sin(t * math.pi * 1.7) * 0.18)
+        return Color3.fromHSV(hue, math.clamp(sat, 0, 1), math.clamp(val, 0.35, 1))
+    end
+
+    function ENXUI:BindChroma(instance, property, offset, gate)
+        if not instance or not property then return end
+        local entry = {
+            Instance = instance,
+            Property = property,
+            Offset = offset or 0,
+            Gate = gate,
+        }
+        table.insert(ENXUI.Chroma.Targets, entry)
+        return entry
+    end
+
+    task.spawn(function()
+        while task.wait(0.05) do
+            if ENXUI.Chroma.Enabled then
+                local base = ENXUI:ChromaColor(0)
+                ENXUI.Theme.Hightlight = base
+                for i = #ENXUI.Chroma.Targets, 1, -1 do
+                    local entry = ENXUI.Chroma.Targets[i]
+                    local inst = entry.Instance
+                    if not inst or not inst.Parent then
+                        table.remove(ENXUI.Chroma.Targets, i)
+                    elseif (not entry.Gate) or entry.Gate() then
+                        local ok = pcall(function()
+                            inst[entry.Property] = ENXUI:ChromaColor(entry.Offset)
+                        end)
+                        if not ok then
+                            table.remove(ENXUI.Chroma.Targets, i)
+                        end
+                    end
+                end
+            end
+        end
+    end)
+
+    function ENXUI:SetTheme(name)
+        if name == "Default" or name == "Gamesense" or name == "Skeet" then
+            ENXUI.Theme = {
+                WindowBackgroundColor = Color3.fromRGB(12, 12, 12),
+                HeadText = Color3.fromRGB(209, 209, 209),
+                LineColor = Color3.fromRGB(35, 35, 35),
+                BackgroundColor = Color3.fromRGB(32, 32, 32),
+                SectionColor = Color3.fromRGB(23, 23, 23),
+                Hightlight = Color3.fromRGB(230, 78, 72),
+                StrokeColor = Color3.fromRGB(40, 40, 40),
+                StrokeColor2 = Color3.fromRGB(136, 136, 136),
+                BackgroundColor2 = Color3.fromRGB(20, 20, 20),
+                IconColor = Color3.fromRGB(255, 255, 255),
+            }
+        elseif name == "Neverlose" then
+            ENXUI.Theme = {
+                WindowBackgroundColor = Color3.fromRGB(6,8,5),
+                HeadText = Color3.fromRGB(233,239,237),
+                LineColor = Color3.fromRGB(18,20,19),
+                BackgroundColor = Color3.fromRGB(6,8,5),
+                SectionColor = Color3.fromRGB(9,11,10),
+                Hightlight = Color3.fromRGB(0,169,239),
+                StrokeColor = Color3.fromRGB(18,20,19),
+                StrokeColor2 = Color3.fromRGB(77,90,92),
+                BackgroundColor2 = Color3.fromRGB(10,14,13),
+                IconColor = Color3.fromRGB(5,164,233),
+            };
+        elseif name == "Fatality" then
+            ENXUI.Theme = {
+                WindowBackgroundColor = Color3.fromRGB(8, 7, 20),
+                HeadText = Color3.fromRGB(245,245,245),
+                LineColor = Color3.fromRGB(54,47,86),
+                BackgroundColor = Color3.fromRGB(11,10,26),
+                SectionColor = Color3.fromRGB(17, 14, 36),
+                Hightlight = Color3.fromRGB(198,9,85),
+                StrokeColor = Color3.fromRGB(54,47,86),
+                StrokeColor2 = Color3.fromRGB(54,47,86),
+                BackgroundColor2 = Color3.fromRGB(21,18,45),
+                IconColor = Color3.fromRGB(233,5,89),
+            };
+        elseif name == "Airflow" then
+            ENXUI.Theme = {
+                WindowBackgroundColor = Color3.fromRGB(41,40,38),
+                HeadText = Color3.fromRGB(229,229,228),
+                LineColor = Color3.fromRGB(49,49,48),
+                BackgroundColor = Color3.fromRGB(69,66,63),
+                SectionColor = Color3.fromRGB(42,41,40),
+                Hightlight = Color3.fromRGB(143,107,190),
+                StrokeColor = Color3.fromRGB(49,49,48),
+                StrokeColor2 = Color3.fromRGB(36, 36, 35),
+                BackgroundColor2 = Color3.fromRGB(46,46,44),
+                IconColor = Color3.fromRGB(143,107,190),
+            };
+        end;
+    end;
+
+    -- ============================================================
+    -- Main UI constructor
+    -- ============================================================
+    function ENXUI.new(config)
+        config = config or {};
+        config.Name = config.Name or "SLASH";
+        config.Keybind = config.Keybind or Enum.KeyCode.LeftControl;
+        config.Scale = config.Scale or UDim2.new(0, 545, 0, 353);
+        config.Resizable = config.Resizable;
+        config.Shadow = config.Shadow or false;
+        config.ShowProfile = config.ShowProfile or false;
+        config.Acrylic = config.Acrylic or false;
+
+        local WindowSignal = {};
+        WindowSignal.SelectedTab = nil;
+        WindowSignal.Tabs = {};
+        WindowSignal.Config = config;
+        WindowSignal.Toggle = true;
+
+        local Content = Instance.new("ScreenGui")
+        local WindowFrame = Instance.new("Frame")
+        local UICorner = Instance.new("UICorner")
+        local UIStroke = Instance.new("UIStroke")
+        local Header = Instance.new("Frame")
+        local HeaderText = Instance.new("TextLabel")
+        local SubTitleText = Instance.new("TextLabel")
+        local Line = Instance.new("Frame")
+        local Frame = Instance.new("Frame")
+        local UIListLayout = Instance.new("UIListLayout")
+        local MinButton = Instance.new("ImageButton")
+        local Line2 = Instance.new("Frame")
+        local BthFrames = Instance.new("Frame")
+        local TabButtons = Instance.new("Frame")
+        local TBSFrame = Instance.new("ScrollingFrame")
+        local UIListLayout2 = Instance.new("UIListLayout")
+        local TabWin = Instance.new("Frame")
+
+        Content.Name = ENXUI:RandomString()
+        Content.Parent = CoreGui;
+        Content.ResetOnSpawn = false
+        Content.IgnoreGuiInset = true
+        Content.ZIndexBehavior = Enum.ZIndexBehavior.Global;
+        table.insert(ENXUI.Guis, Content);
+        ENXUI.ProtectGui(Content);
+
+        WindowFrame.Name = ENXUI:RandomString()
+        WindowFrame.Parent = Content
+        WindowFrame.BackgroundColor3 = ENXUI.Theme.WindowBackgroundColor
+        WindowFrame.BackgroundTransparency = 0.1
+        WindowFrame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+        WindowFrame.BorderSizePixel = 0
+        WindowFrame.ClipsDescendants = true
+        WindowFrame.Position = UDim2.new(0, 177, 0, 177)
+        WindowFrame.Size = UDim2.new(0,0,0,0)
+        WindowFrame.Active = true
+
+        TweenService:Create(WindowFrame,TweenInfo.new(1,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{
+            Size = config.Scale,
+            Position = UDim2.new(0, 75, 0, 75)
+        }):Play()
+
+        UICorner.CornerRadius = UDim.new(0, 4)
+        UICorner.Parent = WindowFrame
+
+        UIStroke.Transparency = 0.850
+        UIStroke.Color = Color3.fromRGB(0, 25, 34)
+        UIStroke.Parent = WindowFrame
+
+        Header.Name = ENXUI:RandomString()
+        Header.Parent = WindowFrame
+        Header.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        Header.BackgroundTransparency = 1.000
+        Header.BorderSizePixel = 0
+        Header.ClipsDescendants = true
+        Header.Size = UDim2.new(1, 0, 0, 45)
+        Header.Position = UDim2.new(0,0,0,-50)
+        Header.Active = true
+
+        task.delay(0.2,function()
+            TweenService:Create(Header,TweenInfo.new(1,Enum.EasingStyle.Quint,Enum.EasingDirection.InOut),{
+                Position = UDim2.new(0,0,0,0)
+            }):Play()
+        end)
+
+        HeaderText.Name = ENXUI:RandomString()
+        HeaderText.Parent = Header
+        HeaderText.BackgroundTransparency = 1.000
+        HeaderText.BorderSizePixel = 0
+        HeaderText.Position = UDim2.new(0, 10, 0, 3)
+        HeaderText.Size = UDim2.new(0, 160, 1, -20)
+        HeaderText.Font = Enum.Font.GothamBold
+        HeaderText.Text = config.Name;
+        HeaderText.TextColor3 = ENXUI.Theme.HeadText
+        HeaderText.TextScaled = false
+        HeaderText.TextXAlignment = Enum.TextXAlignment.Left
+        HeaderText.TextSize = 25.000
+        HeaderText.TextWrapped = true
+
+        task.delay(0.4,function()
+            TweenService:Create(HeaderText,TweenInfo.new(1,Enum.EasingStyle.Quint,Enum.EasingDirection.InOut),{
+                Position = UDim2.new(0, 10, 0, 5)
+            }):Play()
+        end)
+
+        Line.Name = ENXUI:RandomString()
+        Line.Parent = Header
+        Line.AnchorPoint = Vector2.new(0, 1)
+        Line.BackgroundColor3 = ENXUI.Theme.LineColor
+        Line.BorderSizePixel = 0
+        Line.Position = UDim2.new(0, 170, 1, 0)
+        Line.Size = UDim2.new(1, -170, 0, 1)
+
+        SubTitleText.Name = ENXUI:RandomString()
+        SubTitleText.Parent = Header
+        SubTitleText.BackgroundTransparency = 1.000
+        SubTitleText.BorderSizePixel = 0
+        SubTitleText.AnchorPoint = Vector2.new(0, 0.5)
+        SubTitleText.Position = UDim2.new(0, 10, 0.7, 0)
+        SubTitleText.Size = UDim2.new(0, 160, 0, 15)
+        SubTitleText.Font = Enum.Font.GothamMedium
+        SubTitleText.Text = config.SubTitle or ""
+        SubTitleText.TextColor3 = ENXUI.Theme.HeadText
+        SubTitleText.TextSize = 12.000
+        SubTitleText.TextTransparency = 0.500
+        SubTitleText.TextXAlignment = Enum.TextXAlignment.Left
+        SubTitleText.ClipsDescendants = true
+
+        Frame.Parent = Header
+        Frame.AnchorPoint = Vector2.new(1, 0.5)
+        Frame.BackgroundTransparency = 1.000
+        Frame.BorderSizePixel = 0
+        Frame.Position = UDim2.new(1, -10, -0.5, 0)
+        Frame.Size = UDim2.new(0, 150, 0.5, 0)
+        Frame.ZIndex = 5
+
+        task.delay(0.6,function()
+            TweenService:Create(Frame,TweenInfo.new(1,Enum.EasingStyle.Quint,Enum.EasingDirection.InOut),{
+                Position = UDim2.new(1, -10, 0.5, 0)
+            }):Play()
+        end)
+
+        UIListLayout.Parent = Frame
+        UIListLayout.FillDirection = Enum.FillDirection.Horizontal
+        UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+        UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+        UIListLayout.Padding = UDim.new(0, 5)
+
+        MinButton.Name = ENXUI:RandomString()
+        MinButton.Parent = Frame
+        MinButton.BackgroundTransparency = 1.000
+        MinButton.BorderSizePixel = 0
+        MinButton.Size = UDim2.new(1, 0, 1, 0)
+        MinButton.SizeConstraint = Enum.SizeConstraint.RelativeYY
+        MinButton.Image = ENXUI:GetIcon('scan')
+        MinButton.ImageTransparency = 0.200
+
+        Line2.Name = ENXUI:RandomString()
+        Line2.Parent = WindowFrame
+        Line2.BackgroundColor3 = ENXUI.Theme.LineColor
+        Line2.BorderSizePixel = 0
+        Line2.Position = UDim2.new(0, 170, 0, 0)
+        Line2.Size = UDim2.new(0, 1, 1, 0)
+
+        BthFrames.Name = ENXUI:RandomString()
+        BthFrames.Parent = WindowFrame
+        BthFrames.BackgroundTransparency = 1.000
+        BthFrames.BorderSizePixel = 0
+        BthFrames.Position = UDim2.new(-1, 0, 0, 45)
+        BthFrames.Size = UDim2.new(0, 170, 1, -45)
+
+        task.delay(0.3,function()
+            TweenService:Create(BthFrames,TweenInfo.new(1,Enum.EasingStyle.Quint,Enum.EasingDirection.InOut),{
+                Position = UDim2.new(0, 0, 0, 45)
+            }):Play()
+        end)
+
+        TabButtons.Name = ENXUI:RandomString()
+        TabButtons.Parent = BthFrames
+        TabButtons.BackgroundTransparency = 1.000
+        TabButtons.BorderSizePixel = 0
+        TabButtons.ClipsDescendants = true
+        TabButtons.Size = UDim2.new(0, 170, 1.13661206, -100)
+
+        TBSFrame.Name = ENXUI:RandomString()
+        TBSFrame.Parent = TabButtons
+        TBSFrame.Active = true
+        TBSFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+        TBSFrame.BackgroundTransparency = 1.000
+        TBSFrame.BorderSizePixel = 0
+        TBSFrame.ClipsDescendants = false
+        TBSFrame.Position = UDim2.new(-0.4, 0, 0.5, 0)
+        TBSFrame.Size = UDim2.new(1, -5, 1, -5)
+        TBSFrame.ZIndex = 2
+        TBSFrame.BottomImage = ""
+        TBSFrame.ScrollBarThickness = 0
+        TBSFrame.TopImage = ""
+
+        task.delay(0.3,function()
+            TweenService:Create(TBSFrame,TweenInfo.new(1,Enum.EasingStyle.Quint,Enum.EasingDirection.InOut),{
+                Position = UDim2.new(0.5, 0, 0.5, 0)
+            }):Play()
+        end)
+
+        UIListLayout2.Parent = TBSFrame
+        UIListLayout2.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        UIListLayout2.SortOrder = Enum.SortOrder.LayoutOrder
+        UIListLayout2.Padding = UDim.new(0, 3)
+
+        UIListLayout2:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+            TBSFrame.CanvasSize = UDim2.fromOffset(0,UIListLayout2.AbsoluteContentSize.Y + 5)
+        end)
+
+        TabWin.Name = ENXUI:RandomString()
+        TabWin.Parent = WindowFrame
+        TabWin.BackgroundTransparency = 1.000
+        TabWin.BorderSizePixel = 0
+        TabWin.Position = UDim2.new(0, 170, 1, 45)
+        TabWin.Size = UDim2.new(1, -170, 1, -45)
+        TabWin.ZIndex = 2
+
+        task.delay(0.3,function()
+            TweenService:Create(TabWin,TweenInfo.new(0.8,Enum.EasingStyle.Quint,Enum.EasingDirection.InOut),{
+                Position = UDim2.new(0, 170, 0, 45)
+            }):Play()
+        end)
+
+        function WindowSignal:SetSubTitle(text)
+            SubTitleText.Text = text or ""
+        end;
+
+        function WindowSignal:AddLabel(name)
+            local TBSTitle = Instance.new("TextLabel")
+            TBSTitle.Name = ENXUI:RandomString()
+            TBSTitle.Parent = TBSFrame
+            TBSTitle.BackgroundTransparency = 1.000
+            TBSTitle.BorderSizePixel = 0
+            TBSTitle.Size = UDim2.new(1, -17, 0, 15)
+            TBSTitle.ZIndex = 5
+            TBSTitle.Font = Enum.Font.GothamBold
+            TBSTitle.Text = name
+            TBSTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+            TBSTitle.TextSize = 14.000
+            TBSTitle.TextTransparency = 1
+            TBSTitle.TextXAlignment = Enum.TextXAlignment.Left
+            task.delay(#WindowSignal.Tabs / 5,function()
+                TweenService:Create(TBSTitle,TweenInfo.new(0.45),{
+                    TextTransparency = 0.75
+                }):Play()
+            end)
+            table.insert(WindowSignal.Tabs,{TBSTitle});
+        end;
+
+        function WindowSignal:AddTab(config)
+            config = config or {};
+            config.Name = config.Name or 'Example';
+            config.Icon = config.Icon or "target";
+            config.SingleMode = config.SingleMode or false;
+
+            local TabSignal = {};
+            local TabButton = Instance.new("Frame")
+            local UICorner = Instance.new("UICorner")
+            local TabIcon = Instance.new("ImageLabel")
+            local TabName = Instance.new("TextLabel")
+
+            TabButton.Name = ENXUI:RandomString()
+            TabButton.Parent = TBSFrame
+            TabButton.BackgroundColor3 = ENXUI.Theme.BackgroundColor2
+            TabButton.BorderSizePixel = 0
+            TabButton.Size = UDim2.new(0, 0, 0, 35)
+            TabButton.ZIndex = 5
+
+            UICorner.CornerRadius = UDim.new(0, 4)
+            UICorner.Parent = TabButton
+
+            TabIcon.Name = ENXUI:RandomString()
+            TabIcon.Parent = TabButton
+            TabIcon.AnchorPoint = Vector2.new(0, 0.5)
+            TabIcon.BackgroundTransparency = 1.000
+            TabIcon.BorderSizePixel = 0
+            TabIcon.Position = UDim2.new(0, 7, 0.5, 0)
+            TabIcon.Size = UDim2.new(0, 20, 0, 20)
+            TabIcon.ZIndex = 5
+            TabIcon.Image = ENXUI:GetIcon(config.Icon);
+            TabIcon.ImageTransparency = 1
+            TabIcon.ImageColor3 = ENXUI.Theme.IconColor
+
+            TabName.Name = ENXUI:RandomString()
+            TabName.Parent = TabButton
+            TabName.AnchorPoint = Vector2.new(0, 0.5)
+            TabName.BackgroundTransparency = 1.000
+            TabName.BorderSizePixel = 0
+            TabName.Position = UDim2.new(0, 37, 0.5, 0)
+            TabName.Size = UDim2.new(1, -45, 0, 15)
+            TabName.ZIndex = 5
+            TabName.Font = Enum.Font.GothamMedium
+            TabName.Text = config.Name
+            TabName.TextColor3 = Color3.fromRGB(255, 255, 255)
+            TabName.TextScaled = true
+            TabName.TextSize = 14.000
+            TabName.TextTransparency = 1
+            TabName.TextWrapped = true
+            TabName.TextXAlignment = Enum.TextXAlignment.Left
+
+            local TabFrame = Instance.new("Frame")
+            local LeftFrame = Instance.new("ScrollingFrame")
+            local UIListLayout = Instance.new("UIListLayout")
+            local RightFrame = Instance.new("ScrollingFrame")
+            local UIListLayout2 = Instance.new("UIListLayout")
+            local CTFrame = Instance.new("ScrollingFrame")
+            local UIListLayoutAF = Instance.new("UIListLayout")
+
+            TabFrame.Name = ENXUI:RandomString()
+            TabFrame.Parent = TabWin
+            TabFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+            TabFrame.BackgroundTransparency = 1.000
+            TabFrame.BorderSizePixel = 0
+            TabFrame.ClipsDescendants = true
+            TabFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+            TabFrame.Size = UDim2.new(1, -2, 1, -2)
+            TabFrame.ZIndex = 4
+
+            CTFrame.Name = ENXUI:RandomString()
+            CTFrame.Parent = TabFrame
+            CTFrame.Active = true
+            CTFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+            CTFrame.BackgroundTransparency = 1.000
+            CTFrame.BorderSizePixel = 0
+            CTFrame.ClipsDescendants = false
+            CTFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+            CTFrame.Size = UDim2.new(1, -1, 1, -3)
+            CTFrame.CanvasSize = UDim2.new(0, 0, 0, 450)
+            CTFrame.ScrollBarThickness = 0
+            CTFrame.VerticalScrollBarPosition = Enum.VerticalScrollBarPosition.Left
+
+            UIListLayoutAF.Parent = CTFrame
+            UIListLayoutAF.FillDirection = Enum.FillDirection.Horizontal
+            UIListLayoutAF.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            UIListLayoutAF.SortOrder = Enum.SortOrder.LayoutOrder
+            UIListLayoutAF.Padding = UDim.new(0, 2)
+
+            LeftFrame.Name = ENXUI:RandomString()
+            LeftFrame.Parent = CTFrame
+            LeftFrame.Active = true
+            LeftFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+            LeftFrame.BackgroundTransparency = 1.000
+            LeftFrame.BorderSizePixel = 0
+            LeftFrame.ClipsDescendants = false
+            LeftFrame.Position = UDim2.new(0.25, 0, 0.5, 0)
+            LeftFrame.Size = UDim2.new(0.5, -5, 1, -3)
+            LeftFrame.ScrollBarThickness = 0
+            LeftFrame.VerticalScrollBarPosition = Enum.VerticalScrollBarPosition.Left
+
+            UIListLayout.Parent = LeftFrame
+            UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            UIListLayout.Padding = UDim.new(0, 5)
+
+            UIListLayout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+                LeftFrame.CanvasSize = UDim2.fromOffset(0,UIListLayout.AbsoluteContentSize.Y + 5)
+            end)
+
+            RightFrame.Name = ENXUI:RandomString()
+            RightFrame.Parent = CTFrame
+            RightFrame.Active = true
+            RightFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+            RightFrame.BackgroundTransparency = 1.000
+            RightFrame.BorderSizePixel = 0
+            RightFrame.ClipsDescendants = false
+            RightFrame.Position = UDim2.new(0.75, 0, 0.5, 0)
+            RightFrame.Size = UDim2.new(0.5, -5, 1, -3)
+            RightFrame.ScrollBarThickness = 0
+
+            UIListLayout2.Parent = RightFrame
+            UIListLayout2.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            UIListLayout2.SortOrder = Enum.SortOrder.LayoutOrder
+            UIListLayout2.Padding = UDim.new(0, 5)
+
+            UIListLayout2:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+                RightFrame.CanvasSize = UDim2.fromOffset(0,UIListLayout2.AbsoluteContentSize.Y + 5)
+            end)
+
+            task.spawn(function()
+                local enxafLast = nil
+                while true do task.wait(0.25)
+                    local enxafSmall = (WindowSignal.Config.Scale.X.Offset <= ENXUI.MinimumTabSize) or config.SingleMode
+                    if enxafSmall ~= enxafLast then enxafLast = enxafSmall
+                    if enxafSmall then
+                        UIListLayoutAF.FillDirection = Enum.FillDirection.Vertical
+                        UIListLayoutAF.HorizontalAlignment = Enum.HorizontalAlignment.Center
+                        UIListLayoutAF.SortOrder = Enum.SortOrder.LayoutOrder
+                        CTFrame.ScrollingEnabled = true
+                        TweenService:Create(RightFrame,TweenInfo.new(0.2),{
+                            Size = UDim2.new(1,-5,0,UIListLayout2.AbsoluteContentSize.Y + 2)
+                        }):Play()
+                        TweenService:Create(LeftFrame,TweenInfo.new(0.2),{
+                            Size = UDim2.new(1, -5, 0,UIListLayout.AbsoluteContentSize.Y + 3)
+                        }):Play()
+                        TweenService:Create(UIListLayoutAF,TweenInfo.new(0.2),{
+                            Padding = UDim.new(0, 2)
+                        }):Play()
+                        RightFrame.ScrollingEnabled = false
+                        LeftFrame.ScrollingEnabled = false
+                        RightFrame.CanvasPosition = Vector2.new(0,0)
+                        LeftFrame.CanvasPosition = Vector2.new(0,0)
+                        CTFrame.CanvasSize = UDim2.fromOffset(0,UIListLayoutAF.AbsoluteContentSize.Y)
+                    else
+                        CTFrame.CanvasSize = UDim2.fromOffset(0,0)
+                        TweenService:Create(UIListLayoutAF,TweenInfo.new(0.2),{
+                            Padding = UDim.new(0, 5)
+                        }):Play()
+                        TweenService:Create(RightFrame,TweenInfo.new(0.2),{
+                            Size = UDim2.new(0.5, -5, 1, -3)
+                        }):Play()
+                        TweenService:Create(LeftFrame,TweenInfo.new(0.2),{
+                            Size = UDim2.new(0.5, -5, 1, -3)
+                        }):Play()
+                        CTFrame.VerticalScrollBarPosition = Enum.VerticalScrollBarPosition.Left
+                        UIListLayoutAF.FillDirection = Enum.FillDirection.Horizontal
+                        UIListLayoutAF.HorizontalAlignment = Enum.HorizontalAlignment.Center
+                        UIListLayoutAF.SortOrder = Enum.SortOrder.LayoutOrder
+                        CTFrame.ScrollingEnabled = false
+                        RightFrame.ScrollingEnabled = true
+                        LeftFrame.ScrollingEnabled = true
+                        CTFrame.CanvasPosition = Vector2.new(0,0)
+                    end;
+                    end;
+                end;
+            end);
+
+            local ToggleFunc = function(value)
+                if value then
+                    TabFrame.Visible = true;
+                    TweenService:Create(TabButton,TweenInfo.new(0.2),{
+                        BackgroundTransparency = 0.1
+                    }):Play()
+                    TweenService:Create(TabIcon,TweenInfo.new(0.3),{
+                        ImageTransparency = 0.25,
+                        Size = UDim2.new(0, 25, 0, 25),
+                        Position = UDim2.new(0, 4, 0.5, 0)
+                    }):Play()
+                    TweenService:Create(TabName,TweenInfo.new(0.1),{
+                        TextTransparency = 0.1,
+                        Position = UDim2.new(0, 37, 0.5, 0)
+                    }):Play()
+                else
+                    TabFrame.Visible = false;
+                    TweenService:Create(TabButton,TweenInfo.new(0.2),{
+                        BackgroundTransparency = 1
+                    }):Play()
+                    TweenService:Create(TabIcon,TweenInfo.new(0.3),{
+                        ImageTransparency = 0.5,
+                        Position = UDim2.new(0, 7, 0.5, 0),
+                        Size = UDim2.new(0, 20, 0, 20)
+                    }):Play()
+                    TweenService:Create(TabName,TweenInfo.new(0.1),{
+                        TextTransparency = 0.2,
+                        Position = UDim2.new(0, 33, 0.5, 0)
+                    }):Play()
+                end;
+            end;
+
+            local itemForSearch = {};
+            local searchItem = function(q)
+                if q and q:byte() then
+                    for i,v in next , itemForSearch do
+                        if (i % 25) == 1 then
+                            task.wait()
+                        end
+                        if string.find(string.lower(v.Name) , string.lower(q) , 1, true) then
+                            v.Frame.Visible = true;
+                            task.wait()
+                        else
+                            v.Frame.Visible = false;
+                        end;
+                    end;
+                else
+                    for i,v in next , itemForSearch do
+                        if (i % 25) == 1 then
+                            task.wait()
+                        end
+                        v.Frame.Visible = true;
+                    end;
+                end;
+            end;
+
+            local TabIden = {
+                call = ToggleFunc,
+                target = TabButton,
+                Search = searchItem,
+            };
+
+            task.delay(#WindowSignal.Tabs / 8,function()
+                TweenService:Create(TabButton,TweenInfo.new(0.35),{
+                    Size = UDim2.new(1, 0, 0, 35)
+                }):Play()
+            end)
+
+            ToggleFunc(WindowSignal.SelectedTab == nil and true)
+
+            table.insert(WindowSignal.Tabs,TabIden);
+
+            WindowSignal.SelectedTab = TabIden;
+
+            task.delay(0.1,function()
+                WindowSignal.SelectedTab = TabIden;
+            end)
+
+            ENXUI:NewInput(TabButton,function()
+                if not Content.Enabled or not Content.Parent then
+                    return;
+                end;
+                WindowSignal.SelectedTab = TabIden;
+                for i,v in next , WindowSignal.Tabs do
+                    if v.target == TabButton then
+                        ToggleFunc(true)
+                    else
+                        if v.call then
+                            v.call(false)
+                        end
+                    end;
+                end;
+            end);
+
+            function TabSignal:AddSection(Config)
+                Config = Config or {};
+                Config.Name = Config.Name or "Section";
+                Config.Position = Config.Position or "left";
+
+                local SectionSignal = {};
+                local Section = Instance.new("Frame")
+                local UICorner = Instance.new("UICorner")
+                local UIStroke = Instance.new("UIStroke")
+                local head = Instance.new("Frame")
+                local Label = Instance.new("TextLabel")
+                local Frame = Instance.new("Frame")
+                local UIListLayout = Instance.new("UIListLayout")
+
+                Section.Name = ENXUI:RandomString()
+                Section.Parent = (string.lower(Config.Position) == "left" and LeftFrame) or RightFrame;
+                Section.BackgroundColor3 = ENXUI.Theme.SectionColor
+                Section.BorderSizePixel = 0
+                Section.ClipsDescendants = true
+                Section.Size = UDim2.new(1, 0, 0, 25)
+
+                UICorner.CornerRadius = UDim.new(0, 4)
+                UICorner.Parent = Section
+
+                UIStroke.Color = ENXUI.Theme.BackgroundColor
+                UIStroke.Parent = Section
+
+                head.Name = "head"
+                head.Parent = Section
+                head.BackgroundTransparency = 1.000
+                head.BorderSizePixel = 0
+                head.Size = UDim2.new(1, 0, 0, 24)
+
+                Label.Name = "Label"
+                Label.Parent = head
+                Label.AnchorPoint = Vector2.new(0.5, 0)
+                Label.BackgroundTransparency = 1.000
+                Label.BorderSizePixel = 0
+                Label.Position = UDim2.new(0.5, 0, 0, 2)
+                Label.Size = UDim2.new(1, -10, 0, 20)
+                Label.Font = Enum.Font.GothamMedium
+                Label.Text = Config.Name
+                Label.TextColor3 = Color3.fromRGB(254, 254, 254)
+                Label.TextSize = 14.000
+                Label.TextTransparency = 0.200
+                Label.TextXAlignment = Enum.TextXAlignment.Left
+
+                Frame.Parent = head
+                Frame.AnchorPoint = Vector2.new(0, 1)
+                Frame.BackgroundColor3 = ENXUI.Theme.BackgroundColor
+                Frame.BorderSizePixel = 0
+                Frame.Position = UDim2.new(0, 0, 1, 0)
+                Frame.Size = UDim2.new(1, 0, 0, 1)
+                Frame.ZIndex = 6
+
+                UIListLayout.Parent = Section
+                UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+                UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                UIListLayout.Padding = UDim.new(0, 3)
+
+                UIListLayout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
+                    TweenService:Create(Section,TweenInfo.new(0.3,Enum.EasingStyle.Quint),{
+                        Size = UDim2.new(1, 0, 0, UIListLayout.AbsoluteContentSize.Y + 3)
+                    }):Play()
+                end)
+
+                function SectionSignal:AddDivider(config)
+                    config = config or {};
+                    config.Color = config.Color or ENXUI.Theme.LineColor;
+                    config.Height = config.Height or 1;
+                    local Divider = Instance.new("Frame");
+                    local UICorner = Instance.new("UICorner");
+                    table.insert(itemForSearch,{
+                        Frame = Divider,
+                        Name = ""
+                    });
+                    Divider.Name = ENXUI:RandomString();
+                    Divider.Parent = Section;
+                    Divider.BackgroundColor3 = config.Color;
+                    Divider.BorderSizePixel = 0;
+                    Divider.Size = UDim2.new(1, -10, 0, config.Height);
+                    UICorner.CornerRadius = UDim.new(0, 2);
+                    UICorner.Parent = Divider;
+                    return {
+                        SetColor = function(self, newColor)
+                            config.Color = newColor;
+                            Divider.BackgroundColor3 = newColor;
+                        end,
+                        SetHeight = function(self, newHeight)
+                            config.Height = newHeight;
+                            Divider.Size = UDim2.new(1, -10, 0, newHeight);
+                        end,
+                        Visible = function(self, value)
+                            Divider.Visible = value;
+                        end,
+                        Destroy = function(self)
+                            Divider:Destroy();
+                        end
+                    };
+                end;
+
+                function SectionSignal:AddToggle(config)
+                    config = config or {};
+                    config.Default = config.Default or false;
+                    config.Name = config.Name or "Toggle";
+                    config.Callback = config.Callback or function() end;
+
+                    local Toggle = Instance.new("Frame")
+                    local Label = Instance.new("TextLabel")
+                    local sys = Instance.new("Frame")
+                    local UICorner = Instance.new("UICorner")
+                    local color = Instance.new("Frame")
+                    local UICorner2 = Instance.new("UICorner")
+                    local UIStroke = Instance.new("UIStroke")
+
+                    table.insert(itemForSearch,{
+                        Frame = Toggle,
+                        Name = config.Name
+                    })
+
+                    Toggle.Name = ENXUI:RandomString()
+                    Toggle.Parent = Section
+                    Toggle.BackgroundTransparency = 1.000
+                    Toggle.BorderSizePixel = 0
+                    Toggle.Size = UDim2.new(1, -5, 0, 25)
+
+                    Label.Name = "Label"
+                    Label.Parent = Toggle
+                    Label.AnchorPoint = Vector2.new(0, 0.5)
+                    Label.BackgroundTransparency = 1.000
+                    Label.BorderSizePixel = 0
+                    Label.Position = UDim2.new(0, 5, 0.5, 0)
+                    Label.Size = UDim2.new(1, -25, 0.649999976, 0)
+                    Label.Font = Enum.Font.GothamMedium
+                    Label.Text = config.Name
+                    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    Label.TextSize = 14.000
+                    Label.TextTransparency = 0.100
+                    Label.TextXAlignment = Enum.TextXAlignment.Left
+
+                    sys.Name = "sys"
+                    sys.Parent = Toggle
+                    sys.AnchorPoint = Vector2.new(1, 0.5)
+                    sys.BackgroundColor3 = ENXUI.Theme.BackgroundColor
+                    sys.BorderSizePixel = 0
+                    sys.Position = UDim2.new(1, -3, 0.5, 0)
+                    sys.Size = UDim2.new(0, 25, 0, 15)
+
+                    UICorner.CornerRadius = UDim.new(1, 0)
+                    UICorner.Parent = sys
+
+                    color.Name = "color"
+                    color.Parent = sys
+                    color.AnchorPoint = Vector2.new(0.5, 0.5)
+                    color.BackgroundColor3 = ENXUI.Theme.Hightlight
+                    color.BorderSizePixel = 0
+                    color.Position = UDim2.new(0.75, 0, 0.5, 0)
+                    color.Size = UDim2.new(1, 0, 1, 0)
+                    color.SizeConstraint = Enum.SizeConstraint.RelativeYY
+
+                    UICorner2.CornerRadius = UDim.new(1, 0)
+                    UICorner2.Parent = color
+
+                    UIStroke.Color = ENXUI.Theme.StrokeColor
+                    UIStroke.Parent = sys
+
+                    local setValue = function(value)
+                        if value then
+                            TweenService:Create(color,TweenInfo.new(0.2),{
+                                Position = UDim2.new(0.75, 0, 0.5, 0),
+                                BackgroundColor3 = ENXUI.Theme.Hightlight
+                            }):Play()
+                            TweenService:Create(Label,TweenInfo.new(0.4),{
+                                TextTransparency = 0.1
+                            }):Play()
+                        else
+                            TweenService:Create(Label,TweenInfo.new(0.4),{
+                                TextTransparency = 0.4
+                            }):Play()
+                            TweenService:Create(color,TweenInfo.new(0.2),{
+                                Position = UDim2.new(0.25, 0, 0.5, 0),
+                                BackgroundColor3 = Color3.fromRGB(152, 152, 152)
+                            }):Play()
+                        end;
+                    end;
+
+                    setValue(config.Default);
+
+                    ENXUI:NewInput(Toggle,function()
+                        if not Content.Enabled or not Content.Parent then
+                            return;
+                        end;
+                        config.Default = not config.Default
+                        setValue(config.Default)
+                        config.Callback(config.Default,config)
+                    end);
+
+                    return {
+                        SetValue = function(self,newvalue)
+                            config.Default = newvalue
+                            setValue(config.Default)
+                            config.Callback(config.Default,config)
+                        end,
+                        Visible = function(self,value)
+                            Toggle.Visible = value;
+                        end,
+                    }
+                end;
+
+                function SectionSignal:AddLabel(name)
+                    local Label = Instance.new("TextLabel")
+                    table.insert(itemForSearch,{
+                        Frame = Label,
+                        Name = name
+                    })
+                    Label.Name = ENXUI:RandomString()
+                    Label.Parent = Section
+                    Label.BackgroundTransparency = 1.000
+                    Label.BorderSizePixel = 0
+                    Label.Size = UDim2.new(1, -10, 0, 20)
+                    Label.ZIndex = 5
+                    Label.Font = Enum.Font.GothamBold
+                    Label.Text = name
+                    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    Label.TextSize = 13.000
+                    Label.TextTransparency = 0.200
+                    Label.TextXAlignment = Enum.TextXAlignment.Left
+                    return {
+                        SetValue = function(self,newvalue)
+                            Label.Text = newvalue
+                        end,
+                        Visible = function(self,value)
+                            Label.Visible = value;
+                        end,
+                    }
+                end;
+
+                function SectionSignal:AddTextbox(config)
+                    config = config or {};
+                    config.Name = config.Name or "Textbox";
+                    config.Placeholder = config.Placeholder or "";
+                    config.Default = config.Default or "";
+                    config.Callback = config.Callback or function() end;
+
+                    local Textbox = Instance.new("Frame")
+                    local Label = Instance.new("TextLabel")
+                    local value = Instance.new("Frame")
+                    local UICorner = Instance.new("UICorner")
+                    local UIStroke = Instance.new("UIStroke")
+                    local Input = Instance.new("TextBox")
+
+                    table.insert(itemForSearch,{
+                        Frame = Textbox,
+                        Name = config.Name
+                    })
+
+                    Textbox.Name = ENXUI:RandomString()
+                    Textbox.Parent = Section
+                    Textbox.BackgroundTransparency = 1.000
+                    Textbox.BorderSizePixel = 0
+                    Textbox.Size = UDim2.new(1, -5, 0, 25)
+
+                    Label.Name = "Label"
+                    Label.Parent = Textbox
+                    Label.AnchorPoint = Vector2.new(0, 0.5)
+                    Label.BackgroundTransparency = 1.000
+                    Label.BorderSizePixel = 0
+                    Label.Position = UDim2.new(0, 5, 0.5, 0)
+                    Label.Size = UDim2.new(0.42, -10, 0.649999976, 0)
+                    Label.Font = Enum.Font.GothamMedium
+                    Label.Text = config.Name
+                    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    Label.TextSize = 14.000
+                    Label.TextTransparency = 0.100
+                    Label.TextXAlignment = Enum.TextXAlignment.Left
+
+                    value.Name = "value"
+                    value.Parent = Textbox
+                    value.AnchorPoint = Vector2.new(1, 0.5)
+                    value.BackgroundColor3 = ENXUI.Theme.BackgroundColor
+                    value.BorderSizePixel = 0
+                    value.Position = UDim2.new(1, -3, 0.5, 0)
+                    value.Size = UDim2.new(0.58, -13, 0, 17)
+
+                    UICorner.CornerRadius = UDim.new(0, 4)
+                    UICorner.Parent = value
+
+                    UIStroke.Color = ENXUI.Theme.StrokeColor
+                    UIStroke.Parent = value
+
+                    Input.Name = "Input"
+                    Input.Parent = value
+                    Input.BackgroundTransparency = 1.000
+                    Input.BorderSizePixel = 0
+                    Input.Position = UDim2.new(0, 4, 0, 0)
+                    Input.Size = UDim2.new(1, -8, 1, 0)
+                    Input.Font = Enum.Font.GothamMedium
+                    Input.Text = tostring(config.Default)
+                    Input.PlaceholderText = config.Placeholder
+                    Input.PlaceholderColor3 = Color3.fromRGB(152, 152, 152)
+                    Input.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    Input.TextSize = 11.000
+                    Input.TextTransparency = 0.100
+                    Input.TextXAlignment = Enum.TextXAlignment.Left
+                    Input.ClearTextOnFocus = false
+                    Input.MultiLine = false
+                    Input.TextEditable = true
+                    Input.ZIndex = 20
+
+                    Input.Focused:Connect(function()
+                        Input.Text = tostring(config.Default)
+                    end)
+
+                    Input.FocusLost:Connect(function()
+                        local text = tostring(Input.Text or "")
+                        config.Default = text
+                        config.Callback(text, config)
+                    end)
+
+                    return {
+                        SetValue = function(self,newvalue)
+                            config.Default = tostring(newvalue or "")
+                            Input.Text = config.Default
+                        end,
+                        Visible = function(self,value)
+                            Textbox.Visible = value;
+                        end,
+                    }
+                end;
+
+                function SectionSignal:AddButton(config)
+                    config = config or {};
+                    config.Name = config.Name or "Button";
+                    config.Callback = config.Callback or function() end;
+
+                    local Button = Instance.new("Frame")
+                    local Label = Instance.new("TextLabel")
+                    local UICorner = Instance.new("UICorner")
+                    local UIStroke = Instance.new("UIStroke")
+
+                    table.insert(itemForSearch,{
+                        Frame = Button,
+                        Name = config.Name
+                    })
+
+                    Button.Name = ENXUI:RandomString()
+                    Button.Parent = Section
+                    Button.BackgroundColor3 = ENXUI.Theme.BackgroundColor
+                    Button.BorderSizePixel = 0
+                    Button.Size = UDim2.new(1, -10, 0, 25)
+
+                    Label.Name = "Label"
+                    Label.Parent = Button
+                    Label.AnchorPoint = Vector2.new(0.5, 0.5)
+                    Label.BackgroundTransparency = 1.000
+                    Label.BorderSizePixel = 0
+                    Label.Position = UDim2.new(0.5, 0, 0.5, 0)
+                    Label.Size = UDim2.new(1, -25, 0.649999976, 0)
+                    Label.Font = Enum.Font.GothamMedium
+                    Label.Text = config.Name
+                    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    Label.TextSize = 14.000
+                    Label.TextTransparency = 0.100
+
+                    UICorner.CornerRadius = UDim.new(0, 4)
+                    UICorner.Parent = Button
+
+                    UIStroke.Color = ENXUI.Theme.StrokeColor
+                    UIStroke.Parent = Button
+
+                    local button = ENXUI:NewInput(Button,function()
+                        if not Content.Enabled or not Content.Parent then
+                            return;
+                        end;
+                        config.Callback(config);
+                    end)
+
+                    button.MouseEnter:Connect(function()
+                        TweenService:Create(Button,TweenInfo.new(0.1),{
+                            BackgroundColor3 = ENXUI.Theme.Hightlight
+                        }):Play()
+                    end)
+
+                    button.MouseLeave:Connect(function()
+                        TweenService:Create(Button,TweenInfo.new(0.1),{
+                            BackgroundColor3 = ENXUI.Theme.BackgroundColor
+                        }):Play()
+                    end)
+
+                    return {
+                        SetText = function(self,newvalue)
+                            Label.Text = newvalue
+                        end,
+                        Fire = config.Callback,
+                        Visible = function(self,value)
+                            Button.Visible = value;
+                        end,
+                    };
+                end;
+
+                function SectionSignal:AddSlider(config)
+                    config = config or {};
+                    config.Name = config.Name or "Slider"
+                    config.Min = config.Min or 0;
+                    config.Max = config.Max or 100;
+                    config.Default = config.Default or config.Min;
+                    config.Round = config.Round or 0;
+                    config.Type = config.Type or "";
+                    config.Callback = config.Callback or function() end;
+
+                    local Slider = Instance.new("Frame")
+                    local value = Instance.new("Frame")
+                    local UICorner = Instance.new("UICorner")
+                    local LabelValue = Instance.new("TextBox")
+                    local UIStroke = Instance.new("UIStroke")
+                    local Label = Instance.new("TextLabel")
+                    local con = Instance.new("Frame")
+                    local UICorner2 = Instance.new("UICorner")
+                    local UIStroke2 = Instance.new("UIStroke")
+                    local block = Instance.new("Frame")
+                    local UICorner3 = Instance.new("UICorner")
+
+                    table.insert(itemForSearch,{
+                        Frame = Slider,
+                        Name = config.Name
+                    })
+
+                    Slider.Name = ENXUI:RandomString()
+                    Slider.Parent = Section
+                    Slider.BackgroundTransparency = 1.000
+                    Slider.BorderSizePixel = 0
+                    Slider.Size = UDim2.new(1, -5, 0, 22)
+
+                    value.Name = "value"
+                    value.Parent = Slider
+                    value.AnchorPoint = Vector2.new(1, 0.5)
+                    value.BackgroundColor3 = ENXUI.Theme.BackgroundColor
+                    value.BorderSizePixel = 0
+                    value.Position = UDim2.new(1, -3, 0.5, 0)
+                    value.Size = UDim2.new(0, 35, 0, 15)
+
+                    UICorner.CornerRadius = UDim.new(0, 4)
+                    UICorner.Parent = value
+
+                    LabelValue.Name = "LabelValue"
+                    LabelValue.Parent = value
+                    LabelValue.BackgroundTransparency = 1.000
+                    LabelValue.BorderSizePixel = 0
+                    LabelValue.Size = UDim2.new(1, 0, 1, 0)
+                    LabelValue.Font = Enum.Font.GothamMedium
+                    LabelValue.Text = tostring(config.Default)..tostring(config.Type)
+                    LabelValue.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    LabelValue.TextSize = 10.000
+                    LabelValue.TextTransparency = 0.250
+                    LabelValue.ClearTextOnFocus = false
+                    LabelValue.MultiLine = false
+                    LabelValue.TextEditable = true
+                    LabelValue.ZIndex = 20
+
+                    UIStroke.Color = ENXUI.Theme.StrokeColor
+                    UIStroke.Parent = value
+
+                    Label.Name = "Label"
+                    Label.Parent = Slider
+                    Label.AnchorPoint = Vector2.new(0, 0.5)
+                    Label.BackgroundTransparency = 1.000
+                    Label.BorderSizePixel = 0
+                    Label.Position = UDim2.new(0, 5, 0.5, 0)
+                    Label.Size = UDim2.new(1, -40, 0.649999976, 0)
+                    Label.Font = Enum.Font.GothamMedium
+                    Label.Text = config.Name
+                    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    Label.TextSize = 14.000
+                    Label.TextTransparency = 0.250
+                    Label.TextXAlignment = Enum.TextXAlignment.Left
+
+                    con.Name = "con"
+                    con.Parent = Slider
+                    con.AnchorPoint = Vector2.new(1, 0.5)
+                    con.BackgroundColor3 = ENXUI.Theme.BackgroundColor
+                    con.BorderSizePixel = 0
+                    con.Position = UDim2.new(1, -40, 0.5, 0)
+                    con.Size = UDim2.new(1, -140, 1, -1)
+
+                    UICorner2.CornerRadius = UDim.new(1, 0)
+                    UICorner2.Parent = con
+
+                    UIStroke2.Color = ENXUI.Theme.StrokeColor
+                    UIStroke2.Parent = con
+
+                    block.Name = "block"
+                    block.Parent = con
+                    block.BackgroundColor3 = ENXUI.Theme.Hightlight
+                    block.BorderSizePixel = 0
+                    block.Size = UDim2.new(((config.Default - config.Min) / (config.Max - config.Min)), 0, 1, 0)
+                    block.ZIndex = 15
+                    block.Active = true
+
+                    UICorner3.CornerRadius = UDim.new(1, 0)
+                    UICorner3.Parent = block
+
+                    local IsHold = false;
+
+                    local updateSIZE = function()
+                        local test = "2."..string.rep("4",(config.Round or 0) + 1)..tostring(config.Type);
+                        local scale = TextService:GetTextSize(test,LabelValue.TextSize,LabelValue.Font,Vector2.new(math.huge,math.huge));
+                        local scalelab = TextService:GetTextSize(Label.Text,Label.TextSize,Label.Font,Vector2.new(math.huge,math.huge));
+                        local valueWidth = math.max(scale.X + 10, 35)
+                        local labelWidth = scalelab.X + 10
+                        value.Size = UDim2.new(0, valueWidth, 0, 15)
+                        con.Position = UDim2.new(1, -(valueWidth + 8), 0.5, 0)
+                        con.Size = UDim2.new(1, -(labelWidth + valueWidth + 15), 0.200000003, 0)
+                    end
+
+                    updateSIZE()
+
+                    local function update(Input)
+                        local SizeScale = math.clamp((((Input.Position.X) - con.AbsolutePosition.X) / con.AbsoluteSize.X), 0, 1);
+                        local Main = ((config.Max - config.Min) * SizeScale) + config.Min;
+                        local Value = ENXUI:Rounding(Main,config.Round);
+                        local normalized = (Value - config.Min) / (config.Max - config.Min);
+                        TweenService:Create(block , TweenInfo.new(0.04),{
+                            Size = UDim2.new(normalized, 0, 1, 0)
+                        }):Play();
+                        LabelValue.Text = tostring(Value)..tostring(config.Type)
+                        config.Default = Value
+                        updateSIZE()
+                        config.Callback(Value,config)
+                    end;
+
+                    LabelValue.Focused:Connect(function()
+                        IsHold = false
+                        LabelValue.Text = tostring(config.Default)
+                    end)
+
+                    LabelValue.FocusLost:Connect(function()
+                        local cleaned = tostring(LabelValue.Text or ""):gsub("[^%d%.%-]", "")
+                        local typed = tonumber(cleaned)
+                        if typed then
+                            local Value = ENXUI:Rounding(math.clamp(typed, config.Min, config.Max), config.Round)
+                            config.Default = Value
+                            local normalized = (Value - config.Min) / (config.Max - config.Min)
+                            TweenService:Create(block, TweenInfo.new(0.08), {
+                                Size = UDim2.new(normalized, 0, 1, 0)
+                            }):Play()
+                            LabelValue.Text = tostring(Value)..tostring(config.Type)
+                            updateSIZE()
+                            config.Callback(Value, config)
+                        else
+                            LabelValue.Text = tostring(config.Default)..tostring(config.Type)
+                        end
+                    end)
+
+                    con.InputBegan:Connect(function(Input)
+                        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+                            IsHold = true
+                            update(Input)
+                        end
+                    end)
+
+                    ENXUI:Track(UserInputService.InputEnded:Connect(function(Input)
+                        if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+                            IsHold = false
+                        end
+                    end))
+
+                    ENXUI:Track(UserInputService.InputChanged:Connect(function(Input)
+                        if IsHold then
+                            if (Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch) then
+                                update(Input)
+                            end
+                        end
+                    end));
+
+                    return {
+                        SetValue = function(self,newvalue)
+                            config.Default = newvalue;
+                            block.Size = UDim2.new(((config.Default - config.Min) / (config.Max - config.Min)), 0, 1, 0)
+                            LabelValue.Text = tostring(config.Default)..tostring(config.Type)
+                            updateSIZE()
+                        end,
+                        Fire = config.Callback,
+                        Visible = function(self,value)
+                            Slider.Visible = value;
+                        end,
+                    };
+                end;
+
+                function SectionSignal:AddKeybind(config)
+                    config = config or {};
+                    config.Name = config.Name or "Keybind";
+                    config.Default = config.Default or nil;
+                    config.Callback = config.Callback or function() end;
+
+                    local Keys = {
+                        One = '1', Two = '2', Three = '3', Four = '4', Five = '5',
+                        Six = '6', Seven = '7', Eight = '8', Nine = '9', Zero = '0',
+                        Minus = "-", Plus = "+", BackSlash = "\\", Slash = "/",
+                        Period = '.', Semicolon = ';', Colon = ":",
+                        LeftControl = "LCtrl", RightControl = "RCtrl",
+                        LeftShift = "LShift", RightShift = "RShift",
+                    };
+
+                    local GetItem = function(item)
+                        if item then
+                            if typeof(item) == 'EnumItem' then
+                                return Keys[item.Name] or item.Name;
+                            else
+                                return Keys[tostring(item)] or string.upper(tostring(item))
+                            end;
+                        else
+                            return 'NONE';
+                        end;
+                    end;
+
+                    local Keybind = Instance.new("Frame")
+                    local sys = Instance.new("Frame")
+                    local UICorner = Instance.new("UICorner")
+                    local value = Instance.new("TextLabel")
+                    local UIStroke = Instance.new("UIStroke")
+                    local Label = Instance.new("TextLabel")
+
+                    table.insert(itemForSearch,{Frame = Keybind, Name = config.Name})
+
+                    Keybind.Name = ENXUI:RandomString()
+                    Keybind.Parent = Section
+                    Keybind.BackgroundTransparency = 1.000
+                    Keybind.BorderSizePixel = 0
+                    Keybind.Size = UDim2.new(1, -5, 0, 25)
+
+                    sys.Name = "sys"
+                    sys.Parent = Keybind
+                    sys.AnchorPoint = Vector2.new(1, 0.5)
+                    sys.BackgroundColor3 = ENXUI.Theme.BackgroundColor
+                    sys.BorderSizePixel = 0
+                    sys.Position = UDim2.new(1, -3, 0.5, 0)
+                    sys.Size = UDim2.new(0, 25, 0, 15)
+
+                    UICorner.CornerRadius = UDim.new(0, 4)
+                    UICorner.Parent = sys
+
+                    value.Name = "value"
+                    value.Parent = sys
+                    value.BackgroundTransparency = 1.000
+                    value.BorderSizePixel = 0
+                    value.Size = UDim2.new(1, 0, 1, 0)
+                    value.Font = Enum.Font.GothamMedium
+                    value.Text = GetItem(config.Default)
+                    value.TextColor3 = ENXUI.Theme.Hightlight
+                    value.TextSize = 12.000
+                    value.TextTransparency = 0.250
+
+                    UIStroke.Color = ENXUI.Theme.StrokeColor
+                    UIStroke.Parent = sys
+
+                    Label.Name = "Label"
+                    Label.Parent = Keybind
+                    Label.AnchorPoint = Vector2.new(0, 0.5)
+                    Label.BackgroundTransparency = 1.000
+                    Label.BorderSizePixel = 0
+                    Label.Position = UDim2.new(0, 5, 0.5, 0)
+                    Label.Size = UDim2.new(1, -25, 0.649999976, 0)
+                    Label.Font = Enum.Font.GothamMedium
+                    Label.Text = config.Name
+                    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    Label.TextSize = 14.000
+                    Label.TextTransparency = 0.250
+                    Label.TextXAlignment = Enum.TextXAlignment.Left
+
+                    local UpdateScale = function()
+                        local BindLabelScale = TextService:GetTextSize(value.Text,value.TextSize,value.Font,Vector2.new(math.huge,math.huge));
+                        TweenService:Create(sys,TweenInfo.new(0.1),{
+                            Size = UDim2.new(0, BindLabelScale.X + 10, 0, 15)
+                        }):Play();
+                    end;
+
+                    UpdateScale();
+
+                    local Button = ENXUI:NewInput(Keybind);
+                    local IsBinding = false;
+
+                    Button.MouseButton1Click:Connect(function()
+                        if not Content.Enabled or not Content.Parent then
+                            return;
+                        end;
+                        if IsBinding then return; end;
+                        IsBinding = true;
+                        value.Text = "...";
+                        UpdateScale();
+                        local Selected = nil;
+                        while not Selected do
+                            local Key = UserInputService.InputBegan:Wait();
+                            if Key.KeyCode ~= Enum.KeyCode.Unknown then
+                                Selected = Key.KeyCode;
+                            end;
+                        end;
+                        config.Default = Selected;
+                        value.Text = GetItem(Selected);
+                        UpdateScale();
+                        IsBinding = false;
+                        config.Callback(Selected,config);
+                    end)
+
+                    return {
+                        SetValue = function(self,newvalue)
+                            config.Default = newvalue;
+                            value.Text = GetItem(newvalue);
+                            UpdateScale();
+                            config.Callback(newvalue,config);
+                        end,
+                        Fire = config.Callback,
+                        Visible = function(self,value)
+                            Keybind.Visible = value;
+                        end,
+                    };
+                end;
+
+                function SectionSignal:AddDropdown(config)
+                    config = config or {};
+                    config.Name = config.Name or "Dropdown";
+                    config.Values = config.Values or {};
+                    config.Default = config.Default or {};
+                    config.Multi = config.Multi or false;
+                    config.Callback = config.Callback or function() end;
+
+                    local parse = function(value)
+                        if not value then return 'NONE' end;
+                        if typeof(value) == 'table' then
+                            if #value > 0 then
+                                local x = {};
+                                for i,v in next , value do
+                                    table.insert(x , tostring(v))
+                                end;
+                                return table.concat(x,' , ')
+                            else
+                                local x = {};
+                                for i,v in next , value do
+                                    if v == true then
+                                        table.insert(x , tostring(i))
+                                    end
+                                end;
+                                return table.concat(x,' , ')
+                            end;
+                        else
+                            return tostring(value);
+                        end;
+                    end;
+
+                    local Dropown = Instance.new("Frame")
+                    local sys = Instance.new("Frame")
+                    local UICorner = Instance.new("UICorner")
+                    local value = Instance.new("TextLabel")
+                    local UIStroke = Instance.new("UIStroke")
+                    local Label = Instance.new("TextLabel")
+
+                    table.insert(itemForSearch,{Frame = Dropown, Name = config.Name})
+
+                    Dropown.Name = ENXUI:RandomString()
+                    Dropown.Parent = Section
+                    Dropown.BackgroundTransparency = 1.000
+                    Dropown.BorderSizePixel = 0
+                    Dropown.Size = UDim2.new(1, -5, 0, 25)
+
+                    sys.Name = ENXUI:RandomString()
+                    sys.Parent = Dropown
+                    sys.AnchorPoint = Vector2.new(1, 0.5)
+                    sys.BackgroundColor3 = ENXUI.Theme.BackgroundColor
+                    sys.BorderSizePixel = 0
+                    sys.Position = UDim2.new(1, -3, 0.5, 0)
+                    sys.Size = UDim2.new(0, 55, 0, 15)
+
+                    UICorner.CornerRadius = UDim.new(0, 4)
+                    UICorner.Parent = sys
+
+                    value.Name = ENXUI:RandomString()
+                    value.Parent = sys
+                    value.BackgroundTransparency = 1.000
+                    value.BorderSizePixel = 0
+                    value.Size = UDim2.new(1, 0, 1, 0)
+                    value.Font = Enum.Font.GothamMedium
+                    value.Text = parse(config.Default)
+                    value.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    value.TextSize = 12.000
+                    value.TextTransparency = 0.250
+
+                    UIStroke.Color = ENXUI.Theme.StrokeColor
+                    UIStroke.Parent = sys
+
+                    Label.Name = ENXUI:RandomString()
+                    Label.Parent = Dropown
+                    Label.AnchorPoint = Vector2.new(0, 0.5)
+                    Label.BackgroundTransparency = 1.000
+                    Label.BorderSizePixel = 0
+                    Label.Position = UDim2.new(0, 5, 0.5, 0)
+                    Label.Size = UDim2.new(1, -25, 0.649999976, 0)
+                    Label.Font = Enum.Font.GothamMedium
+                    Label.Text = config.Name
+                    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    Label.TextSize = 14.000
+                    Label.TextTransparency = 0.250
+                    Label.TextXAlignment = Enum.TextXAlignment.Left
+
+                    local DropdownItems = Instance.new("Frame")
+                    local UICorner = Instance.new("UICorner")
+                    local UIStroke = Instance.new("UIStroke")
+                    local Scroll = Instance.new("ScrollingFrame")
+                    local UIListLayout = Instance.new("UIListLayout")
+
+                    DropdownItems.Name = ENXUI:RandomString()
+                    DropdownItems.Parent = Content
+                    DropdownItems.BackgroundColor3 = ENXUI.Theme.WindowBackgroundColor
+                    DropdownItems.BackgroundTransparency = 0.050
+                    DropdownItems.BorderSizePixel = 0
+                    DropdownItems.ClipsDescendants = true
+                    DropdownItems.Position = UDim2.new(0.518932879, 0, 0.54108721, 0)
+                    DropdownItems.Size = UDim2.new(0, 165, 0, 0)
+                    DropdownItems.ZIndex = 100
+                    DropdownItems.Visible = false
+
+                    UICorner.CornerRadius = UDim.new(0, 4)
+                    UICorner.Parent = DropdownItems
+
+                    UIStroke.Color = ENXUI.Theme.BackgroundColor
+                    UIStroke.Parent = DropdownItems
+
+                    Scroll.Name = ENXUI:RandomString()
+                    Scroll.Parent = DropdownItems
+                    Scroll.Active = true
+                    Scroll.AnchorPoint = Vector2.new(0.5, 0.5)
+                    Scroll.BackgroundTransparency = 1.000
+                    Scroll.BorderSizePixel = 0
+                    Scroll.ClipsDescendants = false
+                    Scroll.Position = UDim2.new(0.5, 0, 0.5, 0)
+                    Scroll.Size = UDim2.new(1, -5, 1, -5)
+                    Scroll.ZIndex = 101
+                    Scroll.ScrollBarThickness = 0
+
+                    UIListLayout.Parent = Scroll
+                    UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+                    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                    UIListLayout.Padding = UDim.new(0, 5)
+
+                    UIListLayout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function(...)
+                        Scroll.CanvasSize = UDim2.fromOffset(0,UIListLayout.AbsoluteContentSize.Y + 2)
+                    end)
+
+                    DropdownItems:GetPropertyChangedSignal('Size'):Connect(function()
+                        if DropdownItems.Size.Y.Offset < 5 then
+                            DropdownItems.Visible = false
+                        else
+                            DropdownItems.Visible = true
+                        end
+                    end);
+
+                    local Icons = {
+                        Selected = "rbxassetid://10734923868",
+                        Normal = "rbxassetid://10734895856"
+                    }
+
+                    local update = function()
+                        local scale = TextService:GetTextSize(value.Text,value.TextSize,value.Font,Vector2.new(math.huge,math.huge));
+                        TweenService:Create(sys , TweenInfo.new(0.1),{
+                            Size = UDim2.new(0, scale.X + 10, 0, 15)
+                        }):Play()
+                    end;
+
+                    update()
+
+                    local CreateButton = function(name,val)
+                        local Selected = Instance.new("Frame")
+                        local Icon = Instance.new("ImageLabel")
+                        local Label = Instance.new("TextLabel")
+                        local UIStroke = Instance.new("UIStroke")
+                        local UICorner = Instance.new("UICorner")
+
+                        Selected.Name = ENXUI:RandomString()
+                        Selected.Parent = Scroll
+                        Selected.BackgroundColor3 = ENXUI.Theme.BackgroundColor2
+                        Selected.BorderSizePixel = 0
+                        Selected.Size = UDim2.new(1, 0, 0, 25)
+                        Selected.ZIndex = 102
+
+                        Icon.Name = ENXUI:RandomString()
+                        Icon.Parent = Selected
+                        Icon.AnchorPoint = Vector2.new(0, 0.5)
+                        Icon.BackgroundTransparency = 1.000
+                        Icon.BorderSizePixel = 0
+                        Icon.Position = UDim2.new(0, 2, 0.5, 0)
+                        Icon.Size = UDim2.new(0.699999988, 0, 0.699999988, 0)
+                        Icon.SizeConstraint = Enum.SizeConstraint.RelativeYY
+                        Icon.ZIndex = 102
+                        Icon.ImageTransparency = 0.500
+
+                        Label.Name = ENXUI:RandomString()
+                        Label.Parent = Selected
+                        Label.AnchorPoint = Vector2.new(0, 0.5)
+                        Label.BackgroundTransparency = 1.000
+                        Label.BorderSizePixel = 0
+                        Label.Position = UDim2.new(0, 25, 0.5, 0)
+                        Label.Size = UDim2.new(1, -25, 0.649999976, 0)
+                        Label.ZIndex = 102
+                        Label.Font = Enum.Font.GothamMedium
+                        Label.Text = tostring(name)
+                        Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                        Label.TextSize = 12.000
+                        Label.TextTransparency = 0.500
+                        Label.TextXAlignment = Enum.TextXAlignment.Left
+
+                        UIStroke.Transparency = 0.850
+                        UIStroke.Color = ENXUI.Theme.StrokeColor2
+                        UIStroke.Parent = Selected
+
+                        UICorner.CornerRadius = UDim.new(0, 4)
+                        UICorner.Parent = Selected
+
+                        return Selected , Icon
+                    end;
+
+                    local refresh = function()
+                        for i,v in next , Scroll:GetChildren() do
+                            if v:IsA('Frame') then
+                                v:Destroy()
+                            end;
+                        end;
+
+                        local valueBl = (typeof(config.Default) == 'table' and table.clone(config.Default)) or config.Default;
+                        local oldcall;
+
+                        if config.Multi then
+                            if typeof(valueBl) == 'table' and #valueBl > 0 then
+                                local fake = {};
+                                for i,v in next , valueBl do
+                                    fake[v] = true;
+                                end;
+                                table.clear(valueBl)
+                                valueBl = {};
+                                valueBl = fake;
+                            end;
+                        end;
+
+                        config.Default = valueBl;
+
+                        for i,v in next,config.Values do
+                            local IsDefault = config.Default == v or (typeof(valueBl) == 'table' and (config.Default[v] or table.find(config.Default,v)));
+                            local Selected , Icon = CreateButton(v,IsDefault);
+
+                            local effect = function(val)
+                                local x = TweenService:Create(Icon,TweenInfo.new(0.4),{
+                                    Rotation = (val and 180) or -180
+                                });
+                                x:Play()
+                                x.Completed:Connect(function()
+                                    Icon.Rotation = 0
+                                end)
+                            end;
+
+                            local call = function(v)
+                                if v then
+                                    if Icon.Image ~= Icons.Selected then
+                                        effect(true)
+                                    end
+                                    Icon.Image = Icons.Selected
+                                    Icon.ImageTransparency = 0.1
+                                    Icon.ImageColor3 = ENXUI.Theme.Hightlight;
+                                else
+                                    if Icon.Image ~= Icons.Normal then
+                                        effect(false)
+                                    end
+                                    Icon.Image = Icons.Normal
+                                    Icon.ImageTransparency = 0.5
+                                    Icon.ImageColor3 = Color3.fromRGB(255, 255, 255);
+                                end;
+                            end;
+
+                            if IsDefault then
+                                oldcall = call;
+                                call(true)
+                            else
+                                call(false)
+                            end;
+
+                            ENXUI:NewInput(Selected,function()
+                                if not Content.Enabled or not Content.Parent then
+                                    return;
+                                end;
+                                if config.Multi then
+                                    config.Default[v] = not (config.Default[v] or table.find(config.Default,v));
+                                    call(config.Default[v])
+                                    if #config.Default > 0 then
+                                        for i,v in ipairs(config.Default) do
+                                            table.remove(config.Default,i)
+                                        end
+                                    end;
+                                    value.Text = parse(config.Default)
+                                    update()
+                                    config.Callback(config.Default)
+                                else
+                                    config.Default = v;
+                                    if oldcall then
+                                        oldcall(false)
+                                    end;
+                                    call(true)
+                                    oldcall = call;
+                                    value.Text = parse(config.Default)
+                                    update()
+                                    config.Callback(config.Default)
+                                end;
+                            end);
+                        end;
+                    end;
+
+                    local upd = ENXUI:NewInput(Dropown);
+
+                    DropdownItems:SetAttribute('OPENED',false)
+
+                    upd.MouseButton1Click:Connect(function()
+                        if not Content.Enabled or not Content.Parent then
+                            return;
+                        end;
+                        DropdownItems:SetAttribute('OPENED',true)
+                        DropdownItems.Position = UDim2.fromOffset(sys.AbsolutePosition.X - (DropdownItems.AbsoluteSize.X / 2), sys.AbsolutePosition.Y + sys.AbsoluteSize.Y)
+                        TweenService:Create(DropdownItems,TweenInfo.new(0.1),{
+                            Size = UDim2.new(0, 165, 0, math.clamp(UIListLayout.AbsoluteContentSize.Y , 15 , 150))
+                        }):Play()
+                        refresh()
+                    end);
+
+                    return {
+                        SetValue = function(self,newvalue)
+                            config.Default = newvalue;
+                            value.Text = parse(newvalue)
+                            update();
+                        end,
+                        SetValues = function(self , new)
+                            config.Values = new
+                        end,
+                        Fire = config.Callback,
+                        Visible = function(self,value)
+                            Dropown.Visible = value;
+                        end,
+                    };
+                end;
+
+                SectionSignal.Frame = Section;
+                return SectionSignal;
+            end;
+
+            function TabSignal:Rename(new)
+                TabName.Text = new;
+            end;
+
+            function TabSignal:Icon(new)
+                TabIcon.Image = ENXUI:GetIcon(new);
+            end;
+
+            return TabSignal;
+        end;
+
+        local ToggleWin = function(v)
+            if v then
+                TweenService:Create(UIStroke,TweenInfo.new(0.3),{ Transparency = 0.85 }):Play()
+                TweenService:Create(BthFrames,TweenInfo.new(0.7,Enum.EasingStyle.Quint,Enum.EasingDirection.InOut),{
+                    Position = UDim2.new(0, 0, 0, 45)
+                }):Play()
+                TweenService:Create(TabWin,TweenInfo.new(0.8,Enum.EasingStyle.Quint,Enum.EasingDirection.InOut),{
+                    Position = UDim2.new(0, 170, 0, 45)
+                }):Play()
+                TweenService:Create(WindowFrame,TweenInfo.new(0.6,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{
+                    Size = WindowSignal.Config.Scale
+                }):Play()
+            else
+                TweenService:Create(WindowFrame,TweenInfo.new(0.7,Enum.EasingStyle.Back,Enum.EasingDirection.In),{
+                    Size = UDim2.fromOffset(210,44)
+                }):Play()
+                TweenService:Create(BthFrames,TweenInfo.new(0.5,Enum.EasingStyle.Quint,Enum.EasingDirection.InOut),{
+                    Position = UDim2.new(-1, 0, 0, 45)
+                }):Play()
+                TweenService:Create(TabWin,TweenInfo.new(0.45,Enum.EasingStyle.Quint,Enum.EasingDirection.InOut),{
+                    Position = UDim2.new(1, 170, 0, 45)
+                }):Play()
+            end;
+        end;
+
+        MinButton.MouseButton1Click:Connect(function()
+            WindowSignal.Toggle = not WindowSignal.Toggle;
+            ToggleWin(WindowSignal.Toggle)
+        end)
+
+        ENXUI:Track(UserInputService.InputBegan:Connect(function(input, ty)
+            if not ty then
+                if input.KeyCode == WindowSignal.Config.Keybind then
+                    WindowSignal.Toggle = not WindowSignal.Toggle;
+                    ToggleWin(WindowSignal.Toggle)
+                end;
+            end
+        end))
+
+        if config.Resizable then
+            local Resize = Instance.new("TextButton")
+            local IsHold = false;
+
+            Resize.Name = ENXUI:RandomString();
+            Resize.Parent = WindowFrame
+            Resize.AnchorPoint = Vector2.new(0.5, 0.5)
+            Resize.BackgroundTransparency = 1.000
+            Resize.BorderSizePixel = 0
+            Resize.Position = UDim2.new(1, 0, 1, 0)
+            Resize.Size = UDim2.new(0.075000003, 0, 0.075000003, 0)
+            Resize.SizeConstraint = Enum.SizeConstraint.RelativeYY
+            Resize.ZIndex = 100
+            Resize.Font = Enum.Font.SourceSans
+            Resize.Text = ""
+            Resize.Active = true
+
+            local label = Instance.new('ImageLabel',Resize)
+            label.BackgroundTransparency = 1
+            label.Size = UDim2.fromOffset(10,10)
+            label.ZIndex = Resize.ZIndex + 1
+            label.Image = ENXUI:GetIcon('minimize-2')
+            label.Position = UDim2.fromScale(0.5,0.5)
+            label.AnchorPoint = Vector2.new(0.5,0.5)
+
+            Resize.InputBegan:Connect(function(std)
+                if std.UserInputType == Enum.UserInputType.MouseButton1 or std.UserInputType == Enum.UserInputType.Touch then
+                    IsHold = true
+                end
+            end)
+
+            Resize.InputEnded:Connect(function(std)
+                if std.UserInputType == Enum.UserInputType.MouseButton1 or std.UserInputType == Enum.UserInputType.Touch then
+                    IsHold = false
+                end
+            end)
+
+            ENXUI:Track(UserInputService.InputChanged:Connect(function(input)
+                if IsHold and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and WindowSignal.Toggle then
+                    local pios = input.Position;
+                    local x = (pios.X - WindowFrame.AbsolutePosition.X)
+                    local y = (pios.Y - WindowFrame.AbsolutePosition.Y)
+                    if x < 390 then x = 390 end
+                    if y < 240 then y = 240 end
+                    local Offset = UDim2.new(0,x,0,y)
+                    TweenService:Create(WindowFrame , TweenInfo.new(0.05),{
+                        Size = Offset,
+                    }):Play();
+                    WindowSignal.Config.Scale = Offset
+                end;
+            end));
+        end;
+
+        local dragToggle = nil
+        local dragSpeed = 0.2
+        local dragStart = nil
+        local startPos = nil
+
+        local function updateInput(input)
+            local delta = input.Position - dragStart
+            local position = UDim2.new(startPos.X.Scale, math.max(startPos.X.Offset + delta.X , -10),
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            TweenService:Create(WindowFrame, TweenInfo.new(dragSpeed), {Position = position}):Play()
+        end
+
+        Header.InputBegan:Connect(function(input)
+            if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+                dragToggle = true
+                dragStart = input.Position
+                startPos = WindowFrame.Position
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        dragToggle = false
+                    end
+                end)
+            end
+        end)
+
+        ENXUI:Track(UserInputService.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                if dragToggle then
+                    updateInput(input)
+                end
+            end
+        end))
+
+        return WindowSignal;
+    end;
+
+    -- ============================================================
+    -- Notifier
+    -- ============================================================
+    function ENXUI:CreateNotifier()
+        local Content = Instance.new("ScreenGui")
+        local Notification = Instance.new("Frame")
+        local UIListLayout = Instance.new("UIListLayout")
+
+        Content.Name = ENXUI:RandomString()
+        Content.Parent = CoreGui;
+        Content.ResetOnSpawn = false
+        Content.IgnoreGuiInset = true
+        Content.ZIndexBehavior = Enum.ZIndexBehavior.Global;
+        table.insert(ENXUI.Guis, Content);
+        ENXUI.ProtectGui(Content)
+
+        Notification.Name = ENXUI:RandomString()
+        Notification.Parent = Content
+        Notification.AnchorPoint = Vector2.new(1, 1)
+        Notification.BackgroundTransparency = 1.000
+        Notification.BorderSizePixel = 0
+        Notification.Position = UDim2.new(1, -5, 1, -5)
+        Notification.Size = UDim2.new(0, 220, 0, 65)
+        Notification.ZIndex = 100
+
+        UIListLayout.Parent = Notification
+        UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+        UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+        UIListLayout.Padding = UDim.new(0,5)
+
+        return {
+            new = function(head , body , duration)
+                local Notify = Instance.new("Frame")
+                local UICorner = Instance.new("UICorner")
+                local UIStroke = Instance.new("UIStroke")
+                local Header = Instance.new("TextLabel")
+                local Body = Instance.new("TextLabel")
+
+                Notify.Name = ENXUI:RandomString()
+                Notify.Parent = Notification
+                Notify.BackgroundColor3 = ENXUI.Theme.WindowBackgroundColor
+                Notify.BackgroundTransparency = 0.100
+                Notify.BorderSizePixel = 0
+                Notify.Size = UDim2.new(0, 0,0, 0)
+                Notify.ClipsDescendants = true
+
+                UICorner.CornerRadius = UDim.new(0, 4)
+                UICorner.Parent = Notify
+
+                UIStroke.Color = ENXUI.Theme.BackgroundColor
+                UIStroke.Parent = Notify
+
+                Header.Name = ENXUI:RandomString()
+                Header.Parent = Notify
+                Header.BackgroundTransparency = 1.000
+                Header.BorderSizePixel = 0
+                Header.Position = UDim2.new(0, 5, 0, 2)
+                Header.Size = UDim2.new(1, -10, 0, 20)
+                Header.Font = Enum.Font.GothamBold
+                Header.Text = head
+                Header.TextColor3 = Color3.fromRGB(255, 255, 255)
+                Header.TextSize = 14.000
+                Header.TextTransparency = 0.100
+                Header.TextXAlignment = Enum.TextXAlignment.Left
+
+                Body.Name = ENXUI:RandomString()
+                Body.Parent = Notify
+                Body.BackgroundTransparency = 1.000
+                Body.BorderSizePixel = 0
+                Body.Position = UDim2.new(0, 5, 0, 22)
+                Body.Size = UDim2.new(1, -10, 1, -25)
+                Body.Font = Enum.Font.GothamMedium
+                Body.Text = body
+                Body.TextColor3 = Color3.fromRGB(255, 255, 255)
+                Body.TextSize = 11.000
+                Body.TextTransparency = 0.500
+                Body.TextXAlignment = Enum.TextXAlignment.Left
+                Body.TextYAlignment = Enum.TextYAlignment.Top
+
+                local Min = TextService:GetTextSize(Header.Text,Header.TextSize,Header.Font,Vector2.new(math.huge,math.huge));
+                local scale = TextService:GetTextSize(Body.Text,Body.TextSize,Body.Font,Vector2.new(math.huge,math.huge));
+
+                Notify.Size = UDim2.new(0,  math.clamp(scale.X + 25 , Min.X + 10 , 10000),0, 0)
+
+                TweenService:Create(Notify,TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out),{
+                    Size = UDim2.new(0, math.clamp(scale.X + 25 , Min.X + 10 , 10000), 0, scale.Y + 25)
+                }):Play()
+
+                task.delay(((duration or 5) - 0.3),function()
+                    TweenService:Create(Notify,TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In),{
+                    Size = UDim2.new(0, 0,0, scale.Y + 25)
+                    }):Play()
+                    task.wait(.3)
+                    Notify:Destroy()
+                end)
+            end,
+        }
+    end;
+
+    function ENXUI:Unload()
+        for i, v in next, ENXUI.Cleanups do
+            pcall(v);
+        end;
+        table.clear(ENXUI.Cleanups);
+        for i, v in next, ENXUI.Connections do
+            pcall(function()
+                v:Disconnect();
+            end)
+        end;
+        table.clear(ENXUI.Connections);
+        for i, v in next, ENXUI.Guis do
+            pcall(function()
+                v:Destroy();
+            end)
+        end;
+        table.clear(ENXUI.Guis);
+    end;
+end
+
+return ENXUI
